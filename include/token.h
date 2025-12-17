@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-enum class TokenType { NUMBER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN};
+enum class TokenType { NUMBER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, END};
 struct Token
 {
 	TokenType type_;

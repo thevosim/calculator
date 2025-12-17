@@ -6,7 +6,7 @@ Lexer::Lexer(const std::string& input) : s(input), i(0) {}
 
 void Lexer::skipSpaces()
 {
-    while(i < s.size() && expr[i] == ' ') ++i;
+    while(i < s.size() && s[i] == ' ') ++i;
 }
 
 // Конечный автомат для чисел: число должно начинаться с цифры
@@ -83,4 +83,32 @@ Token Lexer::readNumber()
         }
     }
     throw std::runtime_error(std::string("Лексическая ошибка при разборе числа на позиции ") + std::to_string(start));
+}
+
+std::vector<Token> Lexer::tokenize()
+{
+    std::vector<Token> out;
+    while(true)
+    {
+        skipSpaces();
+        if(i >= s.size())
+        {
+            out.emplace_back(TokenType::END, 0.0, "");
+            return out;
+        }
+        char c = s[i];
+        if(isDigit(c))
+        {
+            out.push_back(readNumber());
+            continue;
+        }
+        if(c == '+') { out.emplace_back(TokenType::PLUS, 0.0, "+"); ++i; continue; }
+        if(c == '-') { out.emplace_back(TokenType::MINUS, 0.0, "-"); ++i; continue; }
+        if(c == '*') { out.emplace_back(TokenType::MUL, 0.0, "*"); ++i; continue; }
+        if(c == '/') { out.emplace_back(TokenType::DIV, 0.0, "/"); ++i; continue; }
+        if(c == '(') { out.emplace_back(TokenType::LPAREN, 0.0, "("); ++i; continue; }
+        if(c == ')') { out.emplace_back(TokenType::RPAREN, 0.0, ")"); ++i; continue; }
+
+        throw std::runtime_error(std::string("Неподдерживаемый символ: '") + c + "' на позиции " + std::to_string(i));
+    }
 }
