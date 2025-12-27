@@ -22,16 +22,9 @@ int main()
         {
             Lexer lex(line);
             auto tokens = lex.tokenize();
+            syntaxAnalyzer(tokens);
             auto rpn = toRPN(tokens);
             double res = evalRPN(rpn);
-            std::cout << res << '\n';
-            /* 
-            for(int i = 0; i < rpn.size(); ++i)
-            {
-                std::cout << rpn[i].data_;
-            }
-            std::cout << '\n';
-        `   */
         }
         catch(const std::exception& ex)
         {
