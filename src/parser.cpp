@@ -83,7 +83,8 @@ enum class State
     EXPECT_OP,
     AFTER_LPAREN,
     AFTER_LPAREN_NUMBER,
-    AFTER_LPAREN_EXPR,
+    AFTER_LPAREN_EXPECT_TERM,
+    AFTER_LPAREN_DONE_TERM,
     END
 };
 
@@ -105,9 +106,8 @@ void syntaxAnalyzer(const std::vector<Token>& tokens)
     for(size_t i = 0; i < tokens.size(); ++i)
     {
         const Token &tk = tokens[i];
-        if(tk.type_ == TokenType::END)
+        if(tk.type_ == TokenType::END) 
         {
-            if(st != State::EXPECT_OP) throw std::runtime_error("Синтаксическая ошибка: выражение не завершено");
             st = State::END;
             break;
         }
@@ -131,8 +131,7 @@ void syntaxAnalyzer(const std::vector<Token>& tokens)
 
             case State::EXPECT_OP:
             {
-                if(tk.type_ == TokenType::PLUS || tk.type_ == TokenType::MINUS ||
-                   tk.type_ == TokenType::MUL  || tk.type_ == TokenType::DIV)
+                if(tk.type_ == TokenType::PLUS || tk.type_ == TokenType::MINUS || tk.type_ == TokenType::MUL  || tk.type_ == TokenType::DIV)
                 {
                     st = State::EXPECT_TERM;
                 }
@@ -157,23 +156,26 @@ void syntaxAnalyzer(const std::vector<Token>& tokens)
                 if(tk.type_ == TokenType::PLUS || tk.type_ == TokenType::MINUS ||
                    tk.type_ == TokenType::MUL  || tk.type_ == TokenType::DIV)
                 {
-                    st = State::AFTER_LPAREN_EXPR;
+                    st = State::AFTER_LPAREN_EXPECT_TERM;
                 }
-                else throw std::runtime_error("Синтаксическая ошибка: скобки с одним числом запрещены");
-                break;
-            }
-
-            case State::AFTER_LPAREN_EXPR:
-            {
-                if(tk.type_ == TokenType::NUMBER) st = State::EXPECT_OP;
-                else if(tk.type_ == TokenType::LPAREN) st = State::AFTER_LPAREN;
-                else if(tk.type_ == TokenType::RPAREN) st = State::EXPECT_OP;
                 else throw std::runtime_error("Синтаксическая ошибка");
                 break;
             }
 
-            case State::END:
-                throw std::runtime_error("Вход после завершения");
+            case State::AFTER_LPAREN_EXPECT_TERM:
+            {
+                if(tk.type_ == TokenType::NUMBER) st = State::AFTER_LPAREN_DONE_TERM;
+                else if(tk.type_ == TokenType::LPAREN) st = State::AFTER_LPAREN;
+                else throw std::runtime_error("Синтаксическая ошибка");
+                break;
+            }
+            case State::AFTER_LPAREN_DONE_TERM:
+            {
+                if(tk.type_ == TokenType::PLUS || tk.type_ == TokenType::MINUS || tk.type_ == TokenType::MUL  || tk.type_ == TokenType::DIV)
+                    st = State::AFTER_LPAREN_EXPECT_TERM;
+                if(tk.type_ == TokenType::RPAREN)
+                    st = State::EXPECT_OP;
+            }
         }
     }
     if(st != State::END) throw std::runtime_error("Входные токены не содержат END");
