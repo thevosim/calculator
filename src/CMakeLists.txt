@@ -1,7 +1,13 @@
-set(target ${LIBRARY})
+set(LIB_SRC
+    lexer.cpp
+    parser.cpp
+    eval.cpp
+)
 
-file(GLOB hdrs "*.h*" "${MP2_INCLUDE}/*.h*")
-file(GLOB srcs "*.cpp")
+add_library(${LIBRARY} STATIC ${LIB_SRC})
+target_include_directories(${LIBRARY} PUBLIC ${INCLUDE})
 
-add_library(${target} STATIC ${srcs} ${hdrs})
-target_link_libraries(${target} ${LIBRARY_DEPS})
+# приложение — отдельно, добавляем linenoise.c как исходник C
+add_executable(calc app/main.cpp vendor/linenoise/linenoise.c)
+target_include_directories(calc PRIVATE ${INCLUDE} ${CMAKE_CURRENT_SOURCE_DIR}/vendor/linenoise)
+target_link_libraries(calc PRIVATE ${LIBRARY})

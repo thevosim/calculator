@@ -3,12 +3,10 @@
 #include <cctype>
 
 Lexer::Lexer(const std::string& input) : s(input), i(0) {}
-
 void Lexer::skipSpaces()
 {
     while(i < s.size() && s[i] == ' ') ++i;
 }
-
 // Конечный автомат для чисел: число должно начинаться с цифры
 Token Lexer::readNumber()
 {
@@ -88,9 +86,9 @@ Token Lexer::readNumber()
 std::vector<Token> Lexer::tokenize()
 {
     std::vector<Token> out;
+    skipSpaces();
     while(true)
     {
-        skipSpaces();
         if(i >= s.size())
         {
             out.emplace_back(TokenType::END, 0.0, "");
@@ -108,7 +106,6 @@ std::vector<Token> Lexer::tokenize()
         if(c == '/') { out.emplace_back(TokenType::DIV, 0.0, "/"); ++i; continue; }
         if(c == '(') { out.emplace_back(TokenType::LPAREN, 0.0, "("); ++i; continue; }
         if(c == ')') { out.emplace_back(TokenType::RPAREN, 0.0, ")"); ++i; continue; }
-
         throw std::runtime_error(std::string("Неподдерживаемый символ: '") + c + "' на позиции " + std::to_string(i));
     }
 }
