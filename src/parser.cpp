@@ -8,69 +8,12 @@ static int priority(TokenType t)
     if(t == TokenType::PLUS || t == TokenType::MINUS) return 1;
     return 0;
 }
-void syntaxAnalyzer(const std::vector<Token>& tokens)
+bool isOp(Token tk)
 {
-    enum class State
-    {
-        START,
-        NUM,
-        OP,
-        ERROR
-    };
-    Stack<Token, std::vector<Token>> parentheses_check;
-    Token prev;
-    for(size_t i = 1; i < tokens.size(); ++i)
-    {   
-        prev = tokens[i - 1];
-        if(tokens[i].type_ == TokenType::LPAREN) parentheses_check.push(tokens[i]);
-        if(tokens[i].type_ == TokenType::RPAREN)
-        {
-            if(parentheses_check.empty()) throw std::runtime_error("Скобки не согласованы");
-            if(prev.type_ == TokenType::NUMBER) throw std::runtime_error("Только число в скобках \"(num)\"");
-            if(prev.type_ == TokenType::LPAREN) throw std::runtime_error("Пустое выражение в скобках \"()\"");
-            else parentheses_check.pop();
-        } 
-    }
-    size_t idx = 0;
-    State st = State::START;
-    while(idx < tokens.size())
-    {
-        Token tk = tokens[idx++];
-        if(tk.type_ == TokenType::LPAREN || tk.type_ == TokenType::RPAREN) continue;
-        switch(st)
-        {
-            case State::START:
-            case State::OP:
-                if(tk.type_ == TokenType::NUMBER)
-                {
-                    st = State::NUM;
-                    break;
-                }
-                else
-                {
-                    st = State::ERROR;
-                    break;
-                }
-            case State::NUM:
-                if(tk.type_ == TokenType::PLUS || tk.type_ == TokenType::MINUS \
-                || tk.type_ == TokenType::MUL || tk.type_ == TokenType::DIV)
-                {
-                    st = State::OP;
-                    break;
-                }
-                else 
-                {
-                    st = State::ERROR;
-                    break;
-                }
-            default: 
-                st = State::ERROR; 
-                break;
-        }
-        if(st == State::ERROR) break;
-    }
-    if(st == State::ERROR) throw std::runtime_error("Синтаксическая ошибка");
+    return (tk.type_ == TokenType::PLUS || tk.type_ == TokenType::MINUS \
+    || tk.type_ == TokenType::MUL || tk.type_ == TokenType::DIV);
 }
+bool isNum(Token tk) {return tk.type_ == TokenType::NUMBER;}
 std::vector<Token> toRPN(const std::vector<Token>& tokens)
 {
     std::vector<Token> output;
@@ -105,7 +48,17 @@ std::vector<Token> toRPN(const std::vector<Token>& tokens)
                 ops.push(tk);
                 break;
             }
-
+            case TokenType::LPAREN:
+                ops.push(tk);
+                break;
+            case TokenType::RPAREN:
+                while(!ops.empty())
+                {
+                    Token top = ops.top(); ops.pop();
+                    if(top.type_ == TokenType::LPAREN) break;
+                    output.push_back(top);
+                }
+                break;
             case TokenType::END:
                 while(!ops.empty())
                 {
@@ -118,5 +71,110 @@ std::vector<Token> toRPN(const std::vector<Token>& tokens)
                 throw std::runtime_error("Неожиданный токен при парсинге: " + tk.data_);
         }
     }
+
     throw std::runtime_error("Входной набор токенов не содержит END");
+}
+
+
+enum class State
+{
+    START,
+    EXPECT_TERM,
+    EXPECT_OP,
+    AFTER_LPAREN,
+    AFTER_LPAREN_NUMBER,
+    AFTER_LPAREN_EXPR,
+    END
+};
+
+void syntaxAnalyzer(const std::vector<Token>& tokens)
+{
+    Stack<Token, std::vector<Token>> parens;
+    for(size_t i = 0; i < tokens.size(); ++i)
+    {
+        Token tk = tokens[i];
+        if(tk.type_ == TokenType::LPAREN) parens.push(tk);
+        if(tk.type_ == TokenType::RPAREN)
+        {
+            if(parens.empty()) throw std::runtime_error("Скобки не согласованы");
+            else parens.pop();
+        }
+    }
+    if(!(parens.empty())) throw std::runtime_error("Скобки не согласованы");
+    State st = State::START;
+    for(size_t i = 0; i < tokens.size(); ++i)
+    {
+        const Token &tk = tokens[i];
+        if(tk.type_ == TokenType::END)
+        {
+            if(st != State::EXPECT_OP) throw std::runtime_error("Синтаксическая ошибка: выражение не завершено");
+            st = State::END;
+            break;
+        }
+        switch(st)
+        {
+            case State::START:
+            {
+                if(tk.type_ == TokenType::NUMBER) st = State::EXPECT_OP;
+                else if(tk.type_ == TokenType::LPAREN) st = State::AFTER_LPAREN;
+                else throw std::runtime_error("Синтаксическая ошибка");
+                break;
+            }
+
+            case State::EXPECT_TERM:
+            {
+                if(tk.type_ == TokenType::NUMBER) st = State::EXPECT_OP;
+                else if(tk.type_ == TokenType::LPAREN) st = State::AFTER_LPAREN;
+                else throw std::runtime_error("Синтаксическая ошибка");
+                break;
+            }
+
+            case State::EXPECT_OP:
+            {
+                if(tk.type_ == TokenType::PLUS || tk.type_ == TokenType::MINUS ||
+                   tk.type_ == TokenType::MUL  || tk.type_ == TokenType::DIV)
+                {
+                    st = State::EXPECT_TERM;
+                }
+                else if(tk.type_ == TokenType::RPAREN)
+                {
+                    st = State::EXPECT_OP;
+                }
+                else throw std::runtime_error("Синтаксическая ошибка");
+                break;
+            }
+
+            case State::AFTER_LPAREN:
+            {
+                if(tk.type_ == TokenType::NUMBER) st = State::AFTER_LPAREN_NUMBER;
+                else if(tk.type_ == TokenType::LPAREN) st = State::AFTER_LPAREN;
+                else throw std::runtime_error("Синтаксическая ошибка");
+                break;
+            }
+
+            case State::AFTER_LPAREN_NUMBER:
+            {
+                if(tk.type_ == TokenType::PLUS || tk.type_ == TokenType::MINUS ||
+                   tk.type_ == TokenType::MUL  || tk.type_ == TokenType::DIV)
+                {
+                    st = State::AFTER_LPAREN_EXPR;
+                }
+                else throw std::runtime_error("Синтаксическая ошибка: скобки с одним числом запрещены");
+                break;
+            }
+
+            case State::AFTER_LPAREN_EXPR:
+            {
+                if(tk.type_ == TokenType::NUMBER) st = State::EXPECT_OP;
+                else if(tk.type_ == TokenType::LPAREN) st = State::AFTER_LPAREN;
+                else if(tk.type_ == TokenType::RPAREN) st = State::EXPECT_OP;
+                else throw std::runtime_error("Синтаксическая ошибка");
+                break;
+            }
+
+            case State::END:
+                throw std::runtime_error("Вход после завершения");
+        }
+    }
+    if(st != State::END) throw std::runtime_error("Входные токены не содержат END");
 }

@@ -86,9 +86,9 @@ Token Lexer::readNumber()
 std::vector<Token> Lexer::tokenize()
 {
     std::vector<Token> out;
-    skipSpaces();
     while(true)
     {
+        skipSpaces();
         if(i >= s.size())
         {
             out.emplace_back(TokenType::END, 0.0, "");

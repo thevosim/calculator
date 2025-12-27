@@ -25,10 +25,11 @@ int main()
             syntaxAnalyzer(tokens);
             auto rpn = toRPN(tokens);
             double res = evalRPN(rpn);
+            std::cout << res << '\n';
         }
         catch(const std::exception& ex)
         {
-            std::cout << "Ошибка: " << ex.what() << '\n';
+            std::cout << ex.what() << '\n';
         }
     }
     return 0;

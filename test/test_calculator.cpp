@@ -29,6 +29,7 @@ static double evalExpr(const std::string& expr)
     Lexer lexer(expr);
   
     auto tokens = lexer.tokenize();
+    syntaxAnalyzer(tokens);
     auto rpn = toRPN(tokens);
     double result = evalRPN(rpn);
   
@@ -105,12 +106,12 @@ TEST(ParserTests, PrecedenceWithoutParentheses)
 
 TEST(ParserTests, ParenthesesOverridePrecedence)
 {
-    
+
     Lexer lexer("(3+4)*2");
     auto tokens = lexer.tokenize();
-    
+
     auto rpn = toRPN(tokens);
-    
+
     EXPECT_EQ(rpnToString(rpn), "3 4 + 2 *");
 }
 
@@ -120,7 +121,7 @@ TEST(ParserTests, ExtraRightParenthesisThrows)
     Lexer lexer("1 + )");
     auto tokens = lexer.tokenize();
     
-    EXPECT_THROW(toRPN(tokens), std::runtime_error);
+    EXPECT_THROW(syntaxAnalyzer(tokens), std::runtime_error);
 }
 
 TEST(ParserTests, MissingRightParenthesisThrows)
@@ -129,7 +130,7 @@ TEST(ParserTests, MissingRightParenthesisThrows)
     Lexer lexer("(1+2");
     auto tokens = lexer.tokenize();
     
-    EXPECT_THROW(toRPN(tokens), std::runtime_error);
+    EXPECT_THROW(syntaxAnalyzer(tokens), std::runtime_error);
 }
 
 // ========== Eval tests ==========
@@ -138,7 +139,6 @@ TEST(EvalTests, SimpleAddition)
 {
     
     double res = evalExpr("1+2");
-    
     EXPECT_DOUBLE_EQ(res, 3.0);
 }
 
@@ -192,20 +192,6 @@ TEST(EvalTests, ComplexExpression)
     double res = evalExpr("3+(4-2)*5/2");
     // Assert: (4-2)=2 -> *5=10 -> /2=5 -> +3 = 8
     EXPECT_DOUBLE_EQ(res, 8.0);
-}
-
-TEST(ComplexExprTests, DeeplyNestedSingleValue)
-{
-    
-    const int depth = 20;
-    std::string expr;
-    for(int i = 0; i < depth; ++i) expr.push_back('(');
-    expr += "1";
-    for(int i = 0; i < depth; ++i) expr.push_back(')');
-    
-    double res = evalExpr(expr);
-
-    EXPECT_DOUBLE_EQ(res, 1.0);
 }
 
 TEST(ComplexExprTests, LongChainAdditions)
