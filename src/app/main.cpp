@@ -3,20 +3,21 @@
 #include "eval.h"
 #include <iostream>
 #include <string>
-#include "linenoise.h"
+#include <replxx.hxx>
 
 int main()
 {
+    replxx::Replxx rx;
+
     while(true)
     {
-        char* line_c = linenoise("calc> ");
+        const char* line_c = rx.input("calc> ");
         if(!line_c) { std::cout << "\n"; break; } // Ctrl-D
         std::string line(line_c);
-        free(line_c);
 
         if(line.empty()) continue;
 
-        linenoiseHistoryAdd(line.c_str()); // поддержка стрелки вверх
+        rx.history_add(line.c_str()); // поддержка стрелки вверх
 
         try
         {
