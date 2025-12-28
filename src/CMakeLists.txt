@@ -1,7 +1,13 @@
-set(target ${LIBRARY})
+set(LIB_SRC
+    lexer.cpp
+    parser.cpp
+    eval.cpp
+)
 
-file(GLOB hdrs "*.h*" "${MP2_INCLUDE}/*.h*")
-file(GLOB srcs "*.cpp")
+add_library(${LIBRARY} STATIC ${LIB_SRC})
+target_include_directories(${LIBRARY} PUBLIC ${INCLUDE})
 
-add_library(${target} STATIC ${srcs} ${hdrs})
-target_link_libraries(${target} ${LIBRARY_DEPS})
+add_subdirectory(vendor/replxx)
+
+add_executable(calc app/main.cpp)
+target_link_libraries(calc PRIVATE ${LIBRARY} replxx)
